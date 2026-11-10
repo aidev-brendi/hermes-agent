@@ -230,7 +230,7 @@ class AuthorityConnection:
                     'cron.submit': self.cron_submit, 'cron.status': self.cron_status,
                     'cron.cancel': self.cron_cancel, 'cron.recover': self.cron_recover,
                     'worker.register': self.worker_register, 'worker.adopt': self.worker_adopt,
-                    'worker.persist': self.worker_persist,
+                    'worker.persist': self.worker_persist, 'worker.receipt': self.worker_receipt,
                     'setup.status': self.setup_status, 'setup.runtime_check': self.setup_runtime_check,
                     'session.resume': self.resume, 'session.detach': self.detach,
                     'prompt.submit': self.submit,
@@ -332,10 +332,12 @@ class AuthorityConnection:
         original_params = dict(params)
         contract = contract or METHODS.get(method)
         authority = self.authority
-        if (isinstance(ref.session_id, str) and ref.session_id and not getattr(authority, 'retiring', False)
+        if (method != 'worker.receipt' and isinstance(ref.session_id, str) and ref.session_id
+                and not getattr(authority, 'retiring', False)
                 and ref.profile_id == getattr(authority, 'profile_id', None)
                 and ref.session_id not in getattr(authority, 'sessions', {ref.session_id: None})):
-            # A first read of a session recovery never restored: its compression catch-up (#140060)
+            # Receipt recovery is read-only, even before worker authentication. Other first reads
+            # of a session recovery never restored: its compression catch-up (#140060)
             # commits in a worker here, so the handler's synchronous restore only reads.
             from gateway.session_local_adoption import adopt_before_restore
             await adopt_before_restore(authority, ref.session_id)
@@ -433,6 +435,10 @@ class AuthorityConnection:
     async def worker_adopt(self, ref, params):
         from gateway.session_worker import worker_request
         return await worker_request(self, ref, params, operation='adopt')
+
+    async def worker_receipt(self, ref, params):
+        from gateway.session_worker import worker_request
+        return await worker_request(self, ref, params, operation='receipt')
 
     async def worker_persist(self, ref, params):
         from gateway.session_worker import worker_request
