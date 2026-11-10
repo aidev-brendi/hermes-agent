@@ -1059,8 +1059,14 @@ def _by_status(c: _Ctx) -> Optional[Verdict]:
 # Stage order: plugin hooks → the provider's own profile hook → provider-specific special cases →
 # HTTP status → MoA shapes → structured error code → message patterns → SSL → disconnect +
 # large session → transport types → unknown (retryable with backoff).
+def _codex_detail_only_400(c: _Ctx) -> Optional[Verdict]:
+    from agent.codex_bad_request import is_generic_codex_bad_request
+
+    return _V_SERVER_ERROR if is_generic_codex_bad_request(c.error, provider=c.provider) else None
+
+
 _STAGES: Sequence[Callable[[_Ctx], Optional[Verdict]]] = (
-    _plugin_verdict, _profile_verdict, _provider_special_cases, _by_status, _moa_special_cases,
+    _plugin_verdict, _profile_verdict, _provider_special_cases, _codex_detail_only_400, _by_status, _moa_special_cases,
     _by_error_code, _by_message, _by_transport,
 )
 
