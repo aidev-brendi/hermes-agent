@@ -682,7 +682,8 @@ class GatewayTurnPersistenceMixin:
         await self._hmwa_stop_typing_for_turn(event, source)
         logger.exception("Agent error in session %s", session_key)
         status_code = getattr(e, "status_code", None)
-        if status_code in {400, 500} and len(prepared.history) > 50:
+        from gateway.run_turn import is_context_overflow_failure_result
+        if is_context_overflow_failure_result({'failed': True, 'error': str(e)}, len(prepared.history)):
             # Context overflow / payload too large: a deterministic rejection (#107567), and the same
             # no-grow rule as the persist path (#1630) — nothing is written into an oversized session.
             from gateway.run import _context_overflow_reply

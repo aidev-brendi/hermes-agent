@@ -173,6 +173,16 @@ def handle_api_error(
             interrupt_text=f"Operation interrupted: handling API error ({error_type}: {agent._clean_error_message(str(api_error))}).",
         ))
 
+    from agent.codex_bad_request import recover_generic_codex_bad_request
+    generic400 = recover_generic_codex_bad_request(
+        agent, api_error=api_error, classified=classified, retry=_retry, messages=messages,
+        conversation_history=conversation_history, api_call_count=api_call_count,
+    )
+    if generic400 is not None:
+        # This one-shot allowance must work even at the ordinary retry budget's edge.
+        retry_count -= generic400[0] == "continue"
+        return _verdict(*generic400)
+
     _ce = route_classified_error(
         agent, api_error, classified, _retry, error_msg=error_msg, error_context=error_context,
         recovered_with_pool=recovered_with_pool, base_url=_base, model=_model, messages=messages,

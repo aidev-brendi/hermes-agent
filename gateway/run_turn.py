@@ -96,13 +96,13 @@ def is_context_overflow_failure_result(agent_result: dict, history_len: int) -> 
     (#1630 skip) and the user-facing reply so the two can never disagree.
 
     Multi-word phrases (not bare "exceed"/"token") avoid matching "rate limit exceeded" or
-    "invalid authentication token"; a bare 400 only counts on a long session."""
+    "invalid authentication token". History size and a bare 400 are not overflow evidence."""
     if not agent_result.get("failed"):
         return False
-    if agent_result.get("compression_exhausted"):
+    if agent_result.get("compression_exhausted") or agent_result.get("failure_reason") == "context_overflow":
         return True
     err = str(agent_result.get("error") or "").lower()
-    return any(p in err for p in _CONTEXT_OVERFLOW_ERROR_PHRASES) or ("400" in err and history_len > 50)
+    return any(p in err for p in _CONTEXT_OVERFLOW_ERROR_PHRASES)
 
 
 # Setup/prefix rows rather than conversation: the agent rebuilds its own system prompt, and a

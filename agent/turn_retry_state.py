@@ -41,6 +41,7 @@ class TurnRetryState:
 
     # Transport / rate-limit recovery
     primary_recovery_attempted: bool = False
+    codex_generic400_retry_attempted: bool = False
     has_retried_429: bool = False
     # Credit-limited 402 ("can only afford N tokens") already retried with a lowered output cap.
     affordable_402_clamp_attempted: bool = False
